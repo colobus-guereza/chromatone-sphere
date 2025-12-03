@@ -1,0 +1,137 @@
+export interface EmotionData {
+    id: number;
+    label: string;
+    note: string;
+    hz: number;
+    bpm: number;
+    angle: number;
+    colorHex: string;
+    description: string;
+    radiusScale?: number;
+}
+
+export const emotionData: EmotionData[] = [
+    {
+        id: 1,
+        label: '환희 (Joy)',
+        note: 'C',
+        hz: 261.63,
+        bpm: 150,
+        angle: 0,
+        colorHex: '#FF0000',
+        description: 'High energy, pure positivity',
+        radiusScale: 1.0,
+    },
+    {
+        id: 2,
+        label: '에너지 (Energy)',
+        note: 'C#',
+        hz: 277.18,
+        bpm: 125,
+        angle: 30,
+        colorHex: '#FF4000',
+        description: 'Rising energy',
+    },
+    {
+        id: 3,
+        label: '흥분 (Excitement)',
+        note: 'D',
+        hz: 293.66,
+        bpm: 100,
+        angle: 60,
+        colorHex: '#FF8000',
+        description: 'Active engagement',
+    },
+    {
+        id: 4,
+        label: '낙관 (Optimism)',
+        note: 'D#',
+        hz: 311.13,
+        bpm: 75,
+        angle: 90,
+        colorHex: '#FFBF00',
+        description: 'Bright outlook',
+    },
+    {
+        id: 5,
+        label: '평온 (Calm)',
+        note: 'E',
+        hz: 329.63,
+        bpm: 50,
+        angle: 120,
+        colorHex: '#00FF00',
+        description: 'Deep peace and balance',
+        radiusScale: 0.8,
+    },
+    {
+        id: 6,
+        label: '희망 (Hope)',
+        note: 'F',
+        hz: 349.23,
+        bpm: 63,
+        angle: 150,
+        colorHex: '#00FF80',
+        description: 'Gentle expectation',
+    },
+    {
+        id: 7,
+        label: '성찰 (Reflection)',
+        note: 'F#',
+        hz: 369.99,
+        bpm: 75,
+        angle: 180,
+        colorHex: '#00FFFF',
+        description: 'Inner thought',
+    },
+    {
+        id: 8,
+        label: '슬픔 (Sadness)',
+        note: 'G',
+        hz: 392.00,
+        bpm: 88,
+        angle: 210,
+        colorHex: '#0080FF',
+        description: 'Melancholic depth',
+    },
+    {
+        id: 9,
+        label: '신비 (Mystery)',
+        note: 'G#',
+        hz: 415.30,
+        bpm: 100,
+        angle: 240,
+        colorHex: '#0000FF',
+        description: 'Unknown depths',
+        radiusScale: 0.66,
+    },
+    {
+        id: 10,
+        label: '향수 (Nostalgia)',
+        note: 'A',
+        hz: 440.00,
+        bpm: 113,
+        angle: 270,
+        colorHex: '#8000FF',
+        description: 'Longing for the past',
+    },
+    {
+        id: 11,
+        label: '경이 (Wonder)',
+        note: 'A#',
+        hz: 466.16,
+        bpm: 125,
+        angle: 300,
+        colorHex: '#BF00FF',
+        description: 'Awe and curiosity',
+    },
+    {
+        id: 12,
+        label: '열정 (Passion)',
+        note: 'B',
+        hz: 493.88,
+        bpm: 138,
+        angle: 330,
+        colorHex: '#FF0080',
+        description: 'Intense emotion',
+    },
+];
