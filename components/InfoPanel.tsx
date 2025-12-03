@@ -21,7 +21,7 @@ export function InfoPanel({ isOpen: controlledIsOpen, onOpenChange }: InfoPanelP
     return (
         <div
             data-panel
-            className={`absolute top-[104px] right-8 bg-black/80 backdrop-blur-md border border-white/10 rounded-2xl transition-[opacity,transform,background-color] duration-300 ease-in-out z-20 overflow-hidden ${isExpanded ? 'w-[360px] p-6' : 'w-[60px] h-[60px] p-0 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/10'
+            className={`absolute top-[176px] right-8 bg-black/80 backdrop-blur-md border border-white/10 rounded-2xl transition-[opacity,transform,background-color] duration-300 ease-in-out z-20 overflow-hidden ${isExpanded ? 'w-[420px] p-6 max-h-[90vh] overflow-y-auto' : 'w-[60px] h-[60px] p-0 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/10'
                 }`}
             onClick={(e) => e.stopPropagation()}
         >
@@ -59,41 +59,57 @@ export function InfoPanel({ isOpen: controlledIsOpen, onOpenChange }: InfoPanelP
                 <h2 className="text-2xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400 pr-8">
                     공감각적 관계
                 </h2>
+                <p className="text-gray-400 text-sm mb-6">Synesthetic Relations</p>
 
-                <div className="space-y-4 text-sm font-sans">
-                    <div className="space-y-3">
-                        <p className="text-gray-300 text-xs leading-relaxed">
-                            이 도표는 <span className="text-white font-semibold">감정</span>을 다섯 가지 요소로 표현합니다.
-                        </p>
+                <div className="space-y-5 text-base font-sans">
+                    <p className="text-gray-300 leading-relaxed">
+                        이 인터페이스는 감정을 5가지 물리적 차원으로 변환하여 3D 공간에 시각화합니다. 이 모든 연결은 자연의 진동 비율을 따릅니다.
+                    </p>
+                    
+                    <div className="space-y-4">
+                        <div className="bg-white/5 p-4 rounded-lg border border-white/10 space-y-2">
+                            <h3 className="text-white font-bold text-lg">1. 화성 비율 (Harmonic Ratio: 1 : 4/5 : 2/3)</h3>
+                            <p className="text-gray-300 leading-relaxed mb-2">
+                                이 모델의 핵심 알고리즘입니다.
+                            </p>
+                            <div className="space-y-2 text-gray-300">
+                                <p className="leading-relaxed">
+                                    <span className="font-semibold">소리</span>: 도(C), 미(E), 솔(G)의 3화음은 현의 길이가 1 : 4/5 : 2/3로 줄어들 때 발생하는 완벽한 물리적 공명입니다.
+                                </p>
+                                <p className="leading-relaxed">
+                                    <span className="font-semibold">색상</span>: 이 비율은 시각적 3원색인 <span className="text-red-400 font-semibold">빨강(C/환희)</span>, <span className="text-green-400 font-semibold">초록(E/평온)</span>, <span className="text-blue-400 font-semibold">파랑(G/슬픔)</span>의 좌표 배치 기준이 되어, 소리의 질서가 빛의 파장으로 변환됨을 증명합니다.
+                                </p>
+                            </div>
+                        </div>
                         
-                        <div className="bg-white/5 p-3 rounded-lg border border-white/10 space-y-2">
-                            <p className="text-gray-300 text-xs leading-relaxed">
-                                <span className="text-white font-semibold">원형 좌표</span>는 감정의 위치를 나타냅니다. 
-                                각 감정은 원 둘레의 특정 각도에 배치되어, 마치 시계처럼 감정의 순환을 보여줍니다.
-                            </p>
-                            
-                            <p className="text-gray-300 text-xs leading-relaxed">
-                                <span className="text-white font-semibold">색상</span>은 감정의 온도를 표현합니다. 
-                                빨강(환희)은 뜨거운 열정을, 초록(평온)은 차분한 안정을, 파랑(슬픔)은 차가운 깊이를 나타냅니다. 
-                                마치 무지개처럼 감정의 스펙트럼을 보여줍니다.
-                            </p>
-                            
-                            <p className="text-gray-300 text-xs leading-relaxed">
-                                <span className="text-white font-semibold">음높이(Hz)</span>는 감정의 톤을 결정합니다. 
-                                높은 음은 밝고 경쾌한 감정을, 낮은 음은 깊고 무거운 감정을 나타냅니다. 
-                                마치 피아노 건반처럼 각 감정이 고유한 음을 가집니다.
-                            </p>
-                            
-                            <p className="text-gray-300 text-xs leading-relaxed">
-                                <span className="text-white font-semibold">심박수(BPM)</span>는 감정의 높이를 결정합니다. 
-                                빠른 심박은 높은 곳에, 느린 심박은 낮은 곳에 배치되어, 
-                                마치 산을 오르듯 감정의 강도에 따라 위아래로 움직입니다.
+                        <div className="bg-white/5 p-4 rounded-lg border border-white/10 space-y-2">
+                            <h3 className="text-white font-bold text-lg">2. 원형 좌표 (Cycle)</h3>
+                            <p className="text-gray-300 leading-relaxed">
+                                감정의 위치를 나타냅니다. 12개의 감정은 비율에 맞춰 원 둘레에 배치되어 끊임없이 순환하는 마음의 흐름을 보여줍니다.
                             </p>
                         </div>
                         
-                        <p className="text-gray-400 text-xs leading-relaxed italic">
-                            이 다섯 요소가 함께 어우러져, 감정을 3차원 공간에서 시각적으로 경험할 수 있게 합니다.
-                        </p>
+                        <div className="bg-white/5 p-4 rounded-lg border border-white/10 space-y-2">
+                            <h3 className="text-white font-bold text-lg">3. 음높이 (Hz = Mass)</h3>
+                            <p className="text-gray-300 leading-relaxed">
+                                감정의 무게와 존재감을 결정합니다.
+                            </p>
+                            <ul className="text-gray-300 space-y-1 ml-4 list-disc">
+                                <li><span className="font-semibold">낮은 주파수 (Low Hz)</span>: 파장이 길고 묵직하여 거대한 행성으로 시각화됩니다. (C4 환희는 가장 거대한 근원)</li>
+                                <li><span className="font-semibold">높은 주파수 (High Hz)</span>: 파장이 짧고 날카로워 작고 단단한 위성으로 나타납니다.</li>
+                            </ul>
+                        </div>
+                        
+                        <div className="bg-white/5 p-4 rounded-lg border border-white/10 space-y-2">
+                            <h3 className="text-white font-bold text-lg">4. 심박수 (BPM = Energy)</h3>
+                            <p className="text-gray-300 leading-relaxed">
+                                감정의 높이와 속도를 결정합니다.
+                            </p>
+                            <ul className="text-gray-300 space-y-1 ml-4 list-disc">
+                                <li><span className="font-semibold">고도 (Altitude)</span>: BPM이 높을수록 에너지가 넘쳐 하늘 높이 떠오릅니다.</li>
+                                <li><span className="font-semibold">속도 (Pulse)</span>: BPM에 맞춰 구체가 실제로 두근거립니다. 150 BPM은 심장이 터질 듯 빠르게, 50 BPM은 호흡하듯 느리게 진동합니다.</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>

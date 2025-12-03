@@ -5,24 +5,78 @@ import { OrbitControls, Html, Line, Text, Billboard } from '@react-three/drei';
 import { useThree, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { emotionData } from '@/data/dataset';
+import CosmicBackground from './CosmicBackground';
+import Spaceship from './Spaceship';
+
+// Hex 코드를 컬러 이름으로 변환
+const getColorName = (hex: string): string => {
+    const colorMap: Record<string, string> = {
+        '#FF0000': 'Red',
+        '#FF4000': 'Red Orange',
+        '#FF8000': 'Orange',
+        '#FFBF00': 'Yellow',
+        '#00FF00': 'Green',
+        '#00FF80': 'Spring Green',
+        '#00FFFF': 'Cyan',
+        '#0080FF': 'Sky Blue',
+        '#0000FF': 'Blue',
+        '#8000FF': 'Violet',
+        '#BF00FF': 'Magenta',
+        '#FF0080': 'Rose',
+        '#888888': 'Gray',
+    };
+    return colorMap[hex] || 'Unknown';
+};
+
+
 
 interface EmotionSceneProps {
     onNodeClick?: (nodeId: number) => void;
     focusTarget?: THREE.Vector3 | null;
-    onResetCamera?: () => void;
+    showDropLines?: boolean;
 }
 
 // Helper to calculate scale from Hz (Inverse relationship)
-// C4 (261.63) -> 1.8x (Increased contrast)
-// B4 (493.88) -> 0.8x
+// C4 (261.63) -> 2.5x (Massive Sun)
+// B4 (493.88) -> ~0.7x (Small Satellite)
+// Formula: Scale = Base * (MinHz / Hz)^Power
 const getScaleFromHz = (hz: number) => {
     const minHz = 261.63;
-    const maxHz = 493.88;
-    const minScale = 1.8; // Increased from 1.5
-    const maxScale = 0.8;
+    const baseScale = 2.5;
+    const power = 2.0;
 
-    const t = Math.max(0, Math.min(1, (hz - minHz) / (maxHz - minHz)));
-    return minScale + (maxScale - minScale) * t;
+    return baseScale * Math.pow(minHz / hz, power);
+};
+
+// Generate a simple noise texture for planets to make rotation visible
+const usePlanetTexture = () => {
+    return useMemo(() => {
+        if (typeof document === 'undefined') return null;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 64;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return null;
+
+        // Fill background
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, 64, 64);
+
+        // Add noise/craters
+        for (let i = 0; i < 20; i++) {
+            const x = Math.random() * 64;
+            const y = Math.random() * 64;
+            const r = Math.random() * 5 + 2;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(0, 0, 0, ${Math.random() * 0.2})`;
+            ctx.fill();
+        }
+
+        const tex = new THREE.CanvasTexture(canvas);
+        return tex;
+    }, []);
 };
 
 // Pulsing Sphere Component
@@ -35,17 +89,50 @@ const PulsingSphere = ({ data, isHovered, setHoveredNode, onClick, position }: {
 }) => {
     const meshRef = useRef<THREE.Mesh>(null);
     const baseScale = getScaleFromHz(data.hz);
+    const planetTexture = usePlanetTexture();
 
-    useFrame(({ clock }) => {
+    useFrame(({ clock }, delta) => {
         if (meshRef.current) {
             // Pulse animation based on BPM
-            // Speed: BPM / 60 * 2PI (1 beat per second = 1Hz pulse)
-            const speed = (data.bpm / 60) * Math.PI * 2;
+            // Joy (150 BPM): Fast, Sharp, Low Amplitude
+            // Calm (60 BPM): Slow, Deep, High Amplitude (Octave Drop)
+            // Sadness (100 BPM): Medium, Smooth
+
             const time = clock.getElapsedTime();
-            const pulse = Math.sin(time * speed) * 0.05 * baseScale; // 5% pulse
+            let pulse = 0;
+
+            // Default Speed Calculation based on BPM
+            // Map BPM [50, 150] -> Speed Multiplier [0.5, 3.0]
+            const t = (data.bpm - 50) / 100;
+            const speedMultiplier = 0.5 + (3.0 - 0.5) * t;
+            const speed = speedMultiplier * Math.PI * 2;
+
+            if (data.id === 5) { // Calm (E) - Deep Breath
+                // Octave Drop: Slower speed, Double Amplitude
+                const breathSpeed = speed * 0.8; // Even slower for deep breath
+                const amplitude = 0.15; // 15% scale variation (3x of default)
+                pulse = Math.sin(time * breathSpeed) * amplitude * baseScale;
+            } else if (data.id === 1) { // Joy (C) - High Tension
+                // Sharp, fast vibration
+                const amplitude = 0.03; // 3% scale variation (Small but fast)
+                // Use power to make sine wave "sharper"
+                pulse = Math.pow(Math.sin(time * speed), 3) * amplitude * baseScale;
+            } else {
+                // Standard / Sadness
+                const amplitude = 0.05; // 5% default
+                pulse = Math.sin(time * speed) * amplitude * baseScale;
+            }
 
             const currentScale = baseScale + pulse;
             meshRef.current.scale.set(currentScale, currentScale, currentScale);
+
+            // Rotation Animation linked to BPM
+            // Faster BPM = Faster Rotation
+            const rotationSpeed = 0.2 + (2.0 - 0.2) * t;
+
+            meshRef.current.rotation.y += delta * rotationSpeed;
+            // Slight tilt rotation for realism
+            meshRef.current.rotation.x += delta * rotationSpeed * 0.1;
         }
     });
 
@@ -60,16 +147,17 @@ const PulsingSphere = ({ data, isHovered, setHoveredNode, onClick, position }: {
             <sphereGeometry args={[0.4, 32, 32]} />
             <meshStandardMaterial
                 color={data.colorHex}
+                map={planetTexture}
                 emissive={data.colorHex}
                 emissiveIntensity={isHovered ? 0.8 : 0.2}
-                roughness={0.2}
-                metalness={0.8}
+                roughness={0.7} // Increased roughness to make texture more visible
+                metalness={0.2} // Decreased metalness to reduce overpowering reflections
             />
         </mesh>
     );
 };
 
-export default function EmotionScene({ onNodeClick, focusTarget, onResetCamera }: EmotionSceneProps) {
+export default function EmotionScene({ onNodeClick, focusTarget, resetTrigger, showDropLines = true }: EmotionSceneProps & { resetTrigger?: number }) {
     const [hoveredNode, setHoveredNode] = useState<number | null>(null);
     const controlsRef = useRef<any>(null);
     const { camera } = useThree();
@@ -81,13 +169,15 @@ export default function EmotionScene({ onNodeClick, focusTarget, onResetCamera }
 
     // 카메라 애니메이션을 위한 상태
     const [isAnimating, setIsAnimating] = useState(false);
-    const [resetCamera, setResetCamera] = useState(false);
     const animationTypeRef = useRef<'focus' | 'reset' | null>(null); // 애니메이션 타입 구분
     const targetPositionRef = useRef<THREE.Vector3 | null>(null);
     const targetLookAtRef = useRef<THREE.Vector3 | null>(null);
     const startPositionRef = useRef<THREE.Vector3 | null>(null);
     const startLookAtRef = useRef<THREE.Vector3 | null>(null);
     const animationProgressRef = useRef(0);
+
+    // Reset trigger tracking
+    const prevResetTriggerRef = useRef(resetTrigger);
 
     // Constants
     const BASE_RADIUS = 6;
@@ -121,9 +211,12 @@ export default function EmotionScene({ onNodeClick, focusTarget, onResetCamera }
     };
 
     // Helper to calculate coordinates
+    // 환희가 12시에 오도록 -90도 회전 (0도가 3시이므로 -90도 회전하여 12시로)
+    const ANGLE_OFFSET = -90; // 도형 자체를 회전시켜 환희를 12시에 배치
     const getCoordinates = (angle: number, bpm: number) => {
         const r = BASE_RADIUS; // Constant radius for Tilted Orbit
-        const rad = (angle * Math.PI) / 180;
+        const adjustedAngle = angle + ANGLE_OFFSET; // 각도 오프셋 적용
+        const rad = (adjustedAngle * Math.PI) / 180;
         const x = r * Math.cos(rad);
         const z = r * Math.sin(rad);
 
@@ -178,7 +271,7 @@ export default function EmotionScene({ onNodeClick, focusTarget, onResetCamera }
             }, 10);
 
             return () => clearTimeout(timeoutId);
-        } else if (!focusTarget && !isResettingRef.current && animationTypeRef.current !== 'reset') {
+        } else if (!focusTarget && !isResettingRef.current) {
             // focusTarget이 null이고 초기화 중이 아닐 때만 애니메이션 중지
             animationTypeRef.current = null;
             setIsAnimating(false);
@@ -187,54 +280,36 @@ export default function EmotionScene({ onNodeClick, focusTarget, onResetCamera }
 
     // 카메라 초기화 애니메이션
     const isResettingRef = useRef(false);
-    const startAzimuthRef = useRef(0);
+
     useEffect(() => {
-        if (resetCamera && controlsRef.current) {
-            // 기존 애니메이션 완전히 중지
-            animationTypeRef.current = null;
-            setIsAnimating(false);
-            animationProgressRef.current = 0;
+        // resetTrigger가 변경되었을 때만 실행 (초기 렌더링 제외, 값이 증가했을 때)
+        if (resetTrigger !== undefined && resetTrigger !== prevResetTriggerRef.current) {
+            prevResetTriggerRef.current = resetTrigger;
 
-            // 초기화 플래그 설정 (focusTarget useEffect가 실행되지 않도록)
-            isResettingRef.current = true;
+            if (controlsRef.current) {
+                // 기존 애니메이션 완전히 중지
+                animationTypeRef.current = null;
+                setIsAnimating(false);
+                animationProgressRef.current = 0;
 
-            // 즉시 초기화 애니메이션 시작 (지연 제거)
-            animationTypeRef.current = 'reset';
-            setIsAnimating(true);
-            animationProgressRef.current = 0;
+                // 초기화 플래그 설정 (focusTarget useEffect가 실행되지 않도록)
+                isResettingRef.current = true;
 
-            // 시작 위치 저장 (현재 카메라 위치)
-            startPositionRef.current = camera.position.clone();
-            startLookAtRef.current = controlsRef.current.target.clone();
+                // 즉시 초기화 애니메이션 시작
+                animationTypeRef.current = 'reset';
+                setIsAnimating(true);
+                animationProgressRef.current = 0;
 
-            // 시작 azimuth 저장 (현재 azimuth 가져오기)
-            if (controlsRef.current.getAzimuthalAngle) {
-                startAzimuthRef.current = controlsRef.current.getAzimuthalAngle();
-            } else {
-                startAzimuthRef.current = 0;
+                // 시작 위치 저장 (현재 카메라 위치)
+                startPositionRef.current = camera.position.clone();
+                startLookAtRef.current = controlsRef.current.target.clone();
+
+                // 목표 위치는 초기 위치 (약간 각도가 있는 탑뷰)
+                targetPositionRef.current = initialCameraPosition.clone();
+                targetLookAtRef.current = initialTarget.clone();
             }
-
-            // 목표 위치는 초기 위치 (약간 각도가 있는 탑뷰)
-            targetPositionRef.current = initialCameraPosition.clone();
-            targetLookAtRef.current = initialTarget.clone();
-
-            // 즉시 false로 설정하여 중복 실행 방지
-            setResetCamera(false);
         }
-    }, [resetCamera, camera, initialCameraPosition, initialTarget]);
-
-    // 초기화 함수를 부모에 노출
-    useEffect(() => {
-        if (onResetCamera) {
-            // 부모 컴포넌트에서 호출할 수 있도록 함수 전달
-            (window as any).resetCameraView = () => {
-                setResetCamera(true);
-            };
-        }
-        return () => {
-            delete (window as any).resetCameraView;
-        };
-    }, [onResetCamera]);
+    }, [resetTrigger, camera, initialCameraPosition, initialTarget]);
 
     // 애니메이션 프레임 업데이트
     useFrame((state, delta) => {
@@ -246,13 +321,6 @@ export default function EmotionScene({ onNodeClick, focusTarget, onResetCamera }
             const easedProgress = ease(animationProgressRef.current);
 
             if (startPositionRef.current && startLookAtRef.current) {
-                // 초기화 애니메이션 중일 때 azimuth를 먼저 설정 (카메라 위치에 영향을 주지 않도록)
-                if (animationTypeRef.current === 'reset' && controlsRef.current.setAzimuthalAngle) {
-                    const targetAzimuth = -Math.PI / 2; // -90도 (환희를 12시로)
-                    const currentAzimuth = startAzimuthRef.current + (targetAzimuth - startAzimuthRef.current) * easedProgress;
-                    controlsRef.current.setAzimuthalAngle(currentAzimuth);
-                }
-
                 // 카메라 위치 보간
                 camera.position.lerpVectors(startPositionRef.current, targetPositionRef.current, easedProgress);
 
@@ -321,106 +389,139 @@ export default function EmotionScene({ onNodeClick, focusTarget, onResetCamera }
         };
     }, []);
 
+    // 전체 좌표계 자전 애니메이션을 위한 ref
+    const rotationGroupRef = useRef<THREE.Group>(null);
+
+    // 전체 좌표계를 아주 느리게 자전 (Y축 중심)
+    useFrame((state, delta) => {
+        if (rotationGroupRef.current) {
+            // 매우 느린 회전 속도: 1회전에 약 5분 (0.02 rad/s)
+            // 더 부드러운 회전을 위해 더 작은 값 사용
+            rotationGroupRef.current.rotation.y += delta * 0.02;
+        }
+    });
+
     return (
         <>
+            <CosmicBackground />
+            <Spaceship />
             <ambientLight intensity={0.5} />
             <pointLight position={[10, 10, 10]} intensity={1} />
             <OrbitControls ref={controlsRef} />
 
-            {/* Tilted Ring Line */}
-            <Line points={ringPoints} color="#888" opacity={0.5} transparent lineWidth={1} />
+            {/* 전체 좌표계 회전 그룹 */}
+            <group ref={rotationGroupRef}>
+                {/* Tilted Ring Line */}
+                {showDropLines && (
+                    <Line points={ringPoints} color="#888" opacity={0.5} transparent lineWidth={1} />
+                )}
 
-            {/* Triad Connection */}
-            {triadData && (
-                <>
-                    {triadData.lines.map((points, idx) => (
-                        <Line key={idx} points={points} color="white" lineWidth={2} opacity={0.3} transparent />
-                    ))}
-                    {/* Ratio Labels on Triangle Edges */}
-                    {triadData.labels.map((label, idx) => (
-                        <Billboard key={idx} position={[label.pos.x, label.pos.y, label.pos.z]}>
-                            <Text
-                                fontSize={0.25}
-                                color="white"
-                                anchorX="center"
-                                anchorY="middle"
-                                outlineWidth={0.03}
-                                outlineColor="black"
-                            >
-                                {label.text}
-                            </Text>
-                        </Billboard>
-                    ))}
-                </>
-            )}
-
-            {/* Emotion Nodes */}
-            {emotionData.map((data) => {
-                const pos = getCoordinates(data.angle, data.bpm);
-                const dropLinePoints = [pos, new THREE.Vector3(pos.x, 0, pos.z)];
-                const isHovered = hoveredNode === data.id;
-
-                return (
-                    <group key={data.id}>
-                        {/* Drop Line */}
-                        <Line points={dropLinePoints} color="#666" opacity={0.2} transparent dashed={false} lineWidth={1} />
-
-                        <group position={pos}>
-                            {/* Pulsing Sphere */}
-                            <PulsingSphere
-                                data={data}
-                                isHovered={isHovered}
-                                setHoveredNode={setHoveredNode}
-                                onClick={() => onNodeClick?.(data.id)}
-                                position={new THREE.Vector3(0, 0, 0)} // Position is handled by parent group
-                            />
-
-                            {/* Text Labels (Billboard ensures they face camera) */}
-                            <Billboard position={[0, 0.8 + (getScaleFromHz(data.hz) * 0.4), 0]}>
+                {/* Triad Connection */}
+                {showDropLines && triadData && (
+                    <>
+                        {triadData.lines.map((points, idx) => (
+                            <Line key={idx} points={points} color="white" lineWidth={2} opacity={0.3} transparent />
+                        ))}
+                        {/* Ratio Labels on Triangle Edges */}
+                        {triadData.labels.map((label, idx) => (
+                            <Billboard key={idx} position={[label.pos.x, label.pos.y, label.pos.z]}>
                                 <Text
-                                    fontSize={0.3}
+                                    fontSize={0.25}
                                     color="white"
-                                    anchorY="bottom"
-                                    outlineWidth={0.02}
+                                    anchorX="center"
+                                    anchorY="middle"
+                                    outlineWidth={0.03}
                                     outlineColor="black"
                                 >
-                                    {data.label}
+                                    {label.text}
                                 </Text>
-                                <Text
-                                    position={[0, -0.25, 0]}
-                                    fontSize={0.15}
-                                    color="#ccc"
-                                    anchorY="top"
-                                >
-                                    {data.note} | {data.hz} Hz
-                                </Text>
-                                <Text
-                                    position={[0, -0.45, 0]}
-                                    fontSize={0.15}
-                                    color="#ccc"
-                                    anchorY="top"
-                                >
-                                    {data.bpm} BPM
-                                </Text>
-                                {isHovered && (
-                                    <Text
-                                        position={[0, -0.7, 0]}
-                                        fontSize={0.12}
-                                        color="#aaa"
-                                        anchorY="top"
-                                        maxWidth={2}
-                                        textAlign="center"
-                                    >
-                                        {data.description}
-                                    </Text>
-                                )}
                             </Billboard>
-                        </group>
-                    </group>
-                );
-            })}
+                        ))}
+                    </>
+                )}
 
-            <gridHelper args={[20, 20, 0x222222, 0x111111]} position={[0, 0, 0]} />
+                {/* Emotion Nodes */}
+                {emotionData.map((data) => {
+                    const pos = getCoordinates(data.angle, data.bpm);
+                    const dropLinePoints = [pos, new THREE.Vector3(pos.x, 0, pos.z)];
+                    const isHovered = hoveredNode === data.id;
+
+                    return (
+                        <group key={data.id}>
+                            {/* Drop Line */}
+                            {showDropLines && (
+                                <Line points={dropLinePoints} color="#666" opacity={0.2} transparent dashed={false} lineWidth={1} />
+                            )}
+
+                            <group position={pos}>
+                                {/* Pulsing Sphere */}
+                                <PulsingSphere
+                                    data={data}
+                                    isHovered={isHovered}
+                                    setHoveredNode={setHoveredNode}
+                                    onClick={() => onNodeClick?.(data.id)}
+                                    position={new THREE.Vector3(0, 0, 0)} // Position is handled by parent group
+                                />
+
+                                {/* Text Labels (Billboard ensures they face camera) */}
+                                {showDropLines && (
+                                    <Billboard position={[0, 0.8 + (getScaleFromHz(data.hz) * 0.4), 0]}>
+                                        <Text
+                                            fontSize={0.3}
+                                            color="white"
+                                            anchorY="bottom"
+                                            outlineWidth={0.02}
+                                            outlineColor="black"
+                                        >
+                                            {data.label}
+                                        </Text>
+                                        <Text
+                                            position={[0, -0.25, 0]}
+                                            fontSize={0.15}
+                                            color="#ccc"
+                                            anchorY="top"
+                                        >
+                                            {data.note} | {data.hz} Hz
+                                        </Text>
+                                        <Text
+                                            position={[0, -0.45, 0]}
+                                            fontSize={0.15}
+                                            color="#ccc"
+                                            anchorY="top"
+                                        >
+                                            {data.bpm} BPM
+                                        </Text>
+                                        <Text
+                                            position={[0, -0.65, 0]}
+                                            fontSize={0.15}
+                                            color="#ccc"
+                                            anchorY="top"
+                                        >
+                                            {getColorName(data.colorHex)} | {typeof data.nm === 'number' ? `${data.nm}nm` : data.nm}
+                                        </Text>
+                                        {isHovered && (
+                                            <Text
+                                                position={[0, -0.7, 0]}
+                                                fontSize={0.12}
+                                                color="#aaa"
+                                                anchorY="top"
+                                                maxWidth={2}
+                                                textAlign="center"
+                                            >
+                                                {data.description}
+                                            </Text>
+                                        )}
+                                    </Billboard>
+                                )}
+                            </group>
+                        </group>
+                    );
+                })}
+            </group>
+
+            {showDropLines && (
+                <gridHelper args={[20, 20, 0x222222, 0x111111]} position={[0, 0, 0]} />
+            )}
         </>
     );
 }

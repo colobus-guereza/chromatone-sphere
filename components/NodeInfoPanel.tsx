@@ -34,7 +34,7 @@ export function NodeInfoPanel({ node, onClose }: NodeInfoPanelProps) {
     return (
         <div 
             data-panel
-            className="absolute top-8 right-8 bg-black/80 backdrop-blur-md border border-white/10 rounded-2xl transition-[opacity,transform] duration-300 ease-in-out z-20 overflow-hidden w-[320px] p-4"
+            className="absolute top-[176px] right-8 bg-black/80 backdrop-blur-md border border-white/10 rounded-2xl transition-[opacity,transform] duration-300 ease-in-out z-20 overflow-hidden w-[320px] p-4"
             onClick={(e) => e.stopPropagation()}
         >
             {/* Close Button */}
