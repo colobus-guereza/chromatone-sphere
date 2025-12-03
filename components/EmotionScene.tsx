@@ -163,8 +163,8 @@ export default function EmotionScene({ onNodeClick, focusTarget, resetTrigger, s
     const { camera } = useThree();
 
     // 초기 카메라 위치와 타겟 저장 (약간 각도가 있는 탑뷰, 환희가 12시에 오도록)
-    // 첫 번째 이미지처럼 약간 기울어진 탑뷰 시점
-    const initialCameraPosition = useMemo(() => new THREE.Vector3(0, 12, 4), []); // 약간 각도가 있는 탑뷰
+    // 첫 번째 이미지처럼 약간 기울어진 탑뷰 시점 - 전체가 보이도록 멀리서 설정
+    const initialCameraPosition = useMemo(() => new THREE.Vector3(0, 45, 25), []); // 약간 각도가 있는 탑뷰, 더 멀리서 전체 보이도록
     const initialTarget = useMemo(() => new THREE.Vector3(0, 0, 0), []);
 
     // 카메라 애니메이션을 위한 상태
@@ -178,6 +178,15 @@ export default function EmotionScene({ onNodeClick, focusTarget, resetTrigger, s
 
     // Reset trigger tracking
     const prevResetTriggerRef = useRef(resetTrigger);
+
+    // 초기 렌더링 시 카메라 위치 설정
+    useEffect(() => {
+        if (controlsRef.current) {
+            camera.position.copy(initialCameraPosition);
+            controlsRef.current.target.copy(initialTarget);
+            controlsRef.current.update();
+        }
+    }, []); // 최초 렌더링 시 한 번만 실행
 
     // Constants
     const BASE_RADIUS = 6;
@@ -407,7 +416,11 @@ export default function EmotionScene({ onNodeClick, focusTarget, resetTrigger, s
             <Spaceship />
             <ambientLight intensity={0.5} />
             <pointLight position={[10, 10, 10]} intensity={1} />
-            <OrbitControls ref={controlsRef} />
+            <OrbitControls 
+                ref={controlsRef} 
+                minDistance={15}
+                maxDistance={100}
+            />
 
             {/* 전체 좌표계 회전 그룹 */}
             <group ref={rotationGroupRef}>
